@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 h-screen flex justify-center items-center">
+    <div class="container mx-auto p-6 max-w-4xl bg-white rounded-lg shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Connected Clients Section -->
+            <!-- Connected Clients Section -->
+            <div class="col-span-1 bg-gray-50 rounded-lg p-4">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Available to Chat</h3>
+                <ul id="clientsList" class="space-y-4">
+                    <!-- Connected clients will appear here -->
+                    <!-- Example of Human-like list item -->
+                    <li class="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                        <img src="https://i.pravatar.cc/40" alt="User Avatar" class="w-10 h-10 rounded-full mr-3">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-700">John Doe</h4>
+                            <span class="text-xs text-green-500">Online</span>
+                        </div>
+                    </li>
+                    <!-- More users will be added dynamically -->
+                </ul>
+            </div>
+
+            <!-- Chat Section -->
+            <div class="col-span-2">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <!-- Custom ID Input -->
+                    <div class="mb-4" style="display:none;">
+                        <label for="customId" class="block text-sm font-medium text-gray-700">Enter Your Custom
+                            ID</label>
+                        <div class="flex">
+                            <input type="text" id="customId"
+                                class="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Custom ID">
+                            <button id="setIdBtn"
+                                class="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600">Set ID</button>
+                        </div>
+                    </div>
+
+                    <!-- Recipient ID Input -->
+                    <div class="mb-4" style="display:none">
+                        <label for="recipientId" class="block text-sm font-medium text-gray-700">Recipient ID</label>
+                        <input type="text" id="recipientId"
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Recipient ID">
+                    </div>
+
+                    <!-- Message Display Area -->
+                    <div id="Recipient" class="mb-4">
+                        <h4 id="recipient" class="text-xl font-bold text-gray-800">Select a recipient to chat</h4>
+                    </div>
+                    <div>
+                        <!-- <h3 class="text-lg font-medium text-gray-700 mb-2">Messages</h3> -->
+                        <div id="messages"
+                            class="h-64 bg-gray-50 p-4 border border-gray-200 rounded-lg overflow-y-auto">
+                            <!-- Messages will appear here -->
+                        </div>
+                    </div>
+
+                    <!-- Message Input and Send Button -->
+                    <div class="flex mt-4 bg-white border border-gray-300 rounded-full shadow-sm overflow-hidden">
+                        <!-- Message Input Field -->
+                        <input id="message"
+                            class="flex-grow px-4 py-3 text-gray-700 rounded-l-full focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                            placeholder="Type your message..." />
+                    
+                        <!-- Send Button -->
+                        <button id="sendMessageBtn"
+                            class="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded-r-full shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span>Send</span>
+                            <span class="ml-2">
+                                <svg
+                                    class="w-5 h-5 transform rotate-45 -mt-px"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                    ></path>
+                                </svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <script>
+            const socket = io('http://localhost:3001', { transports: ['websocket'] });
+            // Button click to set custom ID
+            const params = new URLSearchParams(window.location.search);
+            const customId = params.get('id');
+            const recipientId = params.get('rid');
+            document.getElementById('customId').value = customId;
+           
+            if (customId) {
+                document.getElementById('customId').value = customId;
+                socket.emit('set_id', customId);  // Emit customId to the server
+            }
+           
+            
+            if (recipientId) {
+                setRecipient(recipientId);  
+            }
+
+            // Function to append received messages
+            function appendReceivedMessage(sender, message) {
+                const messageDiv = document.getElementById('messages');
+                const receivedMessage = `
+                    <div class="grid mb-4">
+                        <h5 class="text-gray-900 text-sm font-semibold leading-snug pb-1">${sender}</h5>
+                        <div class="w-full max-w-xs grid"> <!-- Ensure message container width -->
+                            <div class="px-3.5 py-2 bg-gray-100 rounded justify-start items-center gap-3 inline-flex">
+                                <h5 class="text-gray-900 text-sm font-normal leading-snug text-justify break-words">${message}</h5> <!-- Added break-words -->
+                            </div>
+                            <div class="justify-end items-center inline-flex mb-2.5">
+                                <h6 class="text-gray-500 text-xs font-normal leading-4 py-1">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h6>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                messageDiv.innerHTML += receivedMessage;
+                messageDiv.scrollTop = messageDiv.scrollHeight;
+            }
+
+            // Function to append sent messages
+            function appendSentMessage(sender, message) {
+                const messageDiv = document.getElementById('messages');
+                const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const sentMessage = `
+                    <div class="grid mb-4">
+                        <h5 class="text-sm font-semibold text-gray-800 pb-1">You</h5>
+                        <div class="w-full max-w-xs grid justify-end"> <!-- Ensure message container width and alignment -->
+                            <div class="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md inline-flex items-center gap-3">
+                                <p class="text-sm leading-snug text-justify break-words">${message}</p> <!-- Added break-words and text-justify -->
+                            </div>
+                            <div class="flex justify-end mt-1">
+                                <span class="text-xs text-gray-400">${currentTime}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                messageDiv.innerHTML += sentMessage;
+                messageDiv.scrollTop = messageDiv.scrollHeight;
+            }
+
+            function setRecipient(clientName) {
+                const recipientElement = document.getElementById('recipient');
+                recipientElement.textContent = clientName; // Update the recipient's name displayed
+                document.getElementById('recipientId').value = clientName;
+            }
+            
+            socket.on('connectedClients', (clients) => {
+                const clientsList = document.getElementById('clientsList');
+                clientsList.innerHTML = '';
+                clients.forEach(client => {
+                    // Get the first two letters of the client name
+                    const initials = client.substring(0, 2).toUpperCase();
+
+                    // Create list item for each client
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center bg-white p-3 rounded-lg shadow-sm cursor-pointer hover:bg-gray-100';
+
+                    // Set inner HTML with initials and client name
+                    li.innerHTML = `
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white font-semibold mr-3">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700">${client}</h4>
+                                <span class="text-xs text-green-500">Online</span>
+                            </div>
+                        `;
+
+                    // Add click event listener
+                    // li.addEventListener('click', () => {
+                    //     // Set the recipientId input field with the clicked client name (or ID)
+                    //     document.getElementById('recipientId').value = client;
+                    //     document.getElementById('recipient').html(client);
+                    // });
+                    li.addEventListener('click', () => setRecipient(client)); // Set recipient on click
+                    if(client != customId)
+                    {
+                        clientsList.appendChild(li);
+                    }
+                    
+                });
+            });
+            // Listen for successful connection
+            socket.on('connect', () => {
+                // appendReceivedMessage('Connected to server');
+                console.log('connected to server');
+            });
+
+            
+            document.getElementById('setIdBtn').addEventListener('click', () => {
+                const customId = document.getElementById('customId').value;
+                // appendSentMessage(`Setting ID: ${customId}`);
+                socket.emit('set_id', customId);
+            });
+
+            // Button click to send message
+            document.getElementById('sendMessageBtn').addEventListener('click', () => {
+                const recipientId = document.getElementById('recipientId').value;
+                const message = document.getElementById('message').value;
+                const fromSender = document.getElementById('customId').value;
+
+                if (!recipientId || !message) {
+                    // appendReceivedMessage('Please fill in all fields');
+                    return;
+                }
+
+                // appendSentMessage(`Sending message to ${recipientId}: ${message}`);
+                appendSentMessage(`${fromSender}`, `${message}`);
+                socket.emit('private_message', { message, recipientId, fromSender });
+                document.getElementById('message').value ='';
+            });
+
+            // Listen for incoming private messages
+            socket.on('private_message', ({ message, from }) => {
+                appendReceivedMessage(`${from}`, `${message}`);
+            });
+
+            // Handle errors
+            socket.on('error', ({ message }) => {
+                appendReceivedMessage(``, `Error: ${message}`);
+            });
+        </script>
+
+</body>
+
+</html>
