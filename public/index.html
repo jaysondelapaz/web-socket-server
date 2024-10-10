@@ -102,7 +102,7 @@
 
 
         <script>
-            const socket = io('http://localhost:3001', { transports: ['websocket'] });
+            const socket = io('https://websocket-pink-mu.vercel.app', { transports: ['websocket'] });
             // Button click to set custom ID
             const params = new URLSearchParams(window.location.search);
             const customId = params.get('id');
